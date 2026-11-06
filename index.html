@@ -348,13 +348,10 @@
 
         function receberResposta(evento) {
 
-          if (evento.source !== apiFrame.contentWindow) return;
+  const resposta = evento.data;
 
-          const resposta = evento.data;
-
-          if (!resposta || resposta.tipo !== 'CESTAS_API') return;
-          if (resposta.requestId !== requestId) return;
-
+        if (!resposta || resposta.tipo !== 'CESTAS_API') return;
+        if (resposta.requestId !== requestId) return;
           clearTimeout(timeout);
           window.removeEventListener('message', receberResposta);
 
