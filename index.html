@@ -1,0 +1,648 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Leitor de QR Code | Cestas de Natal 2026</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      background: #f2f4f8;
+      color: #202b3c;
+      min-height: 100vh;
+      padding: 20px 14px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: auto;
+    }
+
+    .header {
+      background: #172b4d;
+      color: white;
+      padding: 25px;
+      border-radius: 13px 13px 0 0;
+    }
+
+    .header small {
+      color: #bdcce0;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-size: 11px;
+    }
+
+    .header h1 {
+      font-size: 23px;
+      margin: 12px 0 7px;
+    }
+
+    .header p {
+      font-size: 13px;
+      color: #d8e1ed;
+      line-height: 1.5;
+    }
+
+    .content {
+      background: white;
+      padding: 23px;
+      border-radius: 0 0 13px 13px;
+      box-shadow: 0 8px 25px rgba(0,0,0,.05);
+    }
+
+    .field {
+      margin-bottom: 17px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid #dce2ea;
+      border-radius: 8px;
+      outline: none;
+      font-size: 14px;
+    }
+
+    input:focus {
+      border-color: #315b91;
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 8px;
+      padding: 15px;
+      background: #244873;
+      color: white;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:disabled {
+      opacity: .55;
+      cursor: wait;
+    }
+
+    .secondary {
+      background: #e9eef5;
+      color: #244873;
+    }
+
+    .message {
+      display: none;
+      padding: 13px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 17px;
+      line-height: 1.5;
+    }
+
+    .error {
+      display: block;
+      background: #fff0f0;
+      color: #b42318;
+    }
+
+    .success {
+      display: block;
+      background: #edf9f1;
+      color: #187443;
+    }
+
+    .scanner-box {
+      background: #f6f8fb;
+      border: 1px solid #e2e7ef;
+      border-radius: 10px;
+      padding: 12px;
+      margin: 20px 0;
+    }
+
+    #reader {
+      width: 100%;
+      overflow: hidden;
+      border-radius: 8px;
+    }
+
+    #resultado {
+      display: none;
+      margin-top: 20px;
+      border: 1px solid #e1e7ef;
+      border-radius: 10px;
+      padding: 19px;
+    }
+
+    #resultado h2 {
+      font-size: 19px;
+      margin-bottom: 15px;
+    }
+
+    .info {
+      padding: 10px 0;
+      border-bottom: 1px solid #edf0f4;
+      font-size: 14px;
+    }
+
+    .info strong {
+      display: block;
+      color: #8490a0;
+      font-size: 11px;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+    }
+
+    .status {
+      margin-top: 16px;
+      padding: 13px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    .pendente {
+      background: #edf9f1;
+      color: #187443;
+    }
+
+    .entregue {
+      background: #fff0f0;
+      color: #b42318;
+    }
+
+    .footer {
+      text-align: center;
+      color: #929eae;
+      font-size: 11px;
+      padding: 18px;
+    }
+
+    @media print {
+      body {
+        background: white;
+      }
+
+      .header, .content {
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- CONEXÃO COM O GOOGLE APPS SCRIPT -->
+  <iframe
+    id="apiFrame"
+    name="apiFrame"
+    style="display:none"
+  ></iframe>
+
+  <form
+    id="apiForm"
+    method="POST"
+    target="apiFrame"
+    action="https://script.google.com/macros/s/AKfycbwsjXKp0zUF3dgZf8dZl10XSCWP6bAX6aW6H0Q8a5c8zTWhcpfCsBWTIdOgcQRh7JbjPg/exec"
+    style="display:none"
+  >
+    <input type="hidden" name="acao">
+    <input type="hidden" name="token">
+    <input type="hidden" name="pin">
+    <input type="hidden" name="responsavel">
+    <input type="hidden" name="requestId">
+  </form>
+
+  <main class="container">
+
+    <header class="header">
+      <small>Controle de distribuição</small>
+      <h1>Leitor de QR Code</h1>
+      <p>
+        Identificação de funcionários e confirmação
+        de retirada das Cestas de Natal 2026.
+      </p>
+    </header>
+
+    <section class="content">
+
+      <div id="mensagem" class="message"></div>
+
+      <div class="field">
+        <label for="pin">Senha de acesso do responsável</label>
+        <input
+          type="password"
+          id="pin"
+          placeholder="Digite a senha do leitor"
+          autocomplete="current-password"
+        >
+      </div>
+
+      <div class="field">
+        <label for="responsavel">Nome do responsável pela entrega</label>
+        <input
+          type="text"
+          id="responsavel"
+          placeholder="Nome de quem está entregando"
+        >
+      </div>
+
+      <div class="scanner-box">
+        <div id="reader"></div>
+      </div>
+
+      <button id="iniciar" onclick="iniciarLeitor()">
+        INICIAR CÂMERA
+      </button>
+
+      <button
+        class="secondary"
+        id="parar"
+        onclick="pararLeitor()"
+        style="display:none"
+      >
+        PARAR CÂMERA
+      </button>
+
+      <div id="resultado">
+
+        <h2>Funcionário identificado</h2>
+
+        <div class="info">
+          <strong>Nome completo</strong>
+          <span id="nomeFuncionario"></span>
+        </div>
+
+        <div class="info">
+          <strong>Matrícula</strong>
+          <span id="matriculaFuncionario"></span>
+        </div>
+
+        <div id="status" class="status"></div>
+
+        <button
+          id="confirmar"
+          onclick="confirmarEntrega()"
+        >
+          CONFIRMAR ENTREGA DA CESTA
+        </button>
+
+        <button
+          class="secondary"
+          onclick="novaLeitura()"
+        >
+          NOVA LEITURA
+        </button>
+
+      </div>
+
+    </section>
+
+    <footer class="footer">
+      Sistema de Controle de Cestas de Natal · 2026
+    </footer>
+
+  </main>
+
+  <script>
+    let leitor = null;
+    let tokenAtual = '';
+    let funcionarioAtual = null;
+    let processando = false;
+
+    const mensagem = document.getElementById('mensagem');
+    const apiFrame = document.getElementById('apiFrame');
+    const apiForm = document.getElementById('apiForm');
+
+    // COMUNICAÇÃO COM O GOOGLE APPS SCRIPT
+    function chamarAPI(acao, token, pin, responsavel = '') {
+      return new Promise((resolve, reject) => {
+
+        const requestId =
+          Date.now().toString() +
+          Math.random().toString(36).substring(2);
+
+        const timeout = setTimeout(() => {
+          window.removeEventListener('message', receberResposta);
+          reject(new Error(
+            'O servidor demorou para responder. Verifique sua conexão e tente novamente.'
+          ));
+        }, 30000);
+
+        function receberResposta(evento) {
+
+          if (evento.source !== apiFrame.contentWindow) return;
+
+          const resposta = evento.data;
+
+          if (!resposta || resposta.tipo !== 'CESTAS_API') return;
+          if (resposta.requestId !== requestId) return;
+
+          clearTimeout(timeout);
+          window.removeEventListener('message', receberResposta);
+
+          resolve(resposta.dados);
+        }
+
+        window.addEventListener('message', receberResposta);
+
+        apiForm.elements['acao'].value = acao;
+        apiForm.elements['token'].value = token || '';
+        apiForm.elements['pin'].value = pin || '';
+        apiForm.elements['responsavel'].value = responsavel || '';
+        apiForm.elements['requestId'].value = requestId;
+
+        apiForm.submit();
+      });
+    }
+
+    function mostrarMensagem(texto, tipo) {
+      mensagem.textContent = texto;
+      mensagem.className = 'message ' + tipo;
+      mensagem.style.display = 'block';
+    }
+
+    function esconderMensagem() {
+      mensagem.style.display = 'none';
+      mensagem.textContent = '';
+    }
+
+    function validarCampos() {
+      if (!document.getElementById('pin').value.trim()) {
+        mostrarMensagem('Digite a senha do leitor.', 'error');
+        return false;
+      }
+
+      if (!document.getElementById('responsavel').value.trim()) {
+        mostrarMensagem('Informe o responsável pela entrega.', 'error');
+        return false;
+      }
+
+      return true;
+    }
+
+    // INICIAR CÂMERA
+    async function iniciarLeitor() {
+      esconderMensagem();
+
+      if (!validarCampos()) return;
+
+      try {
+
+        if (typeof Html5Qrcode === 'undefined') {
+          throw new Error(
+            'A biblioteca do leitor não carregou. Verifique sua internet e atualize a página.'
+          );
+        }
+
+        if (
+          !navigator.mediaDevices ||
+          !navigator.mediaDevices.getUserMedia
+        ) {
+          throw new Error(
+            'Seu navegador não disponibilizou acesso à câmera. Abra o link diretamente no Chrome.'
+          );
+        }
+
+        mostrarMensagem('Inicializando câmera...', 'success');
+
+        if (!leitor) {
+          leitor = new Html5Qrcode('reader');
+        }
+
+        const cameras = await Html5Qrcode.getCameras();
+
+        if (!cameras || cameras.length === 0) {
+          throw new Error('Nenhuma câmera foi encontrada no aparelho.');
+        }
+
+        const cameraTraseira = cameras.find(camera =>
+          /back|rear|environment|traseira|trás/i.test(camera.label)
+        );
+
+        const cameraEscolhida = cameraTraseira || cameras[0];
+
+        await leitor.start(
+          cameraEscolhida.id,
+          {
+            fps: 10,
+            qrbox: {
+              width: 230,
+              height: 230
+            }
+          },
+          codigoLido,
+          function() {}
+        );
+
+        esconderMensagem();
+
+        document.getElementById('iniciar').style.display = 'none';
+        document.getElementById('parar').style.display = 'block';
+
+      } catch (erro) {
+        console.error('Erro ao iniciar câmera:', erro);
+
+        mostrarMensagem(
+          'Não foi possível iniciar a câmera: ' + erro.message,
+          'error'
+        );
+      }
+    }
+
+    // PARAR CÂMERA
+    async function pararLeitor() {
+      if (leitor && leitor.isScanning) {
+        await leitor.stop();
+      }
+
+      document.getElementById('iniciar').style.display = 'block';
+      document.getElementById('parar').style.display = 'none';
+    }
+
+    // CONSULTAR FUNCIONÁRIO
+    async function codigoLido(codigo) {
+      if (processando || tokenAtual) return;
+
+      processando = true;
+      tokenAtual = codigo;
+
+      await pararLeitor();
+
+      mostrarMensagem('Consultando funcionário...', 'success');
+
+      try {
+
+        const resposta = await chamarAPI(
+          'consultar',
+          codigo,
+          document.getElementById('pin').value
+        );
+
+        processando = false;
+        esconderMensagem();
+
+        if (!resposta || !resposta.sucesso) {
+          tokenAtual = '';
+
+          mostrarMensagem(
+            resposta?.mensagem || 'Funcionário não encontrado.',
+            'error'
+          );
+
+          return;
+        }
+
+        funcionarioAtual = resposta;
+
+        document.getElementById('nomeFuncionario').textContent =
+          resposta.nome;
+
+        document.getElementById('matriculaFuncionario').textContent =
+          resposta.matricula;
+
+        const status = document.getElementById('status');
+        const confirmar = document.getElementById('confirmar');
+
+        document.getElementById('resultado').style.display = 'block';
+
+        if (String(resposta.status).toUpperCase() === 'ENTREGUE') {
+
+          status.textContent = 'CESTA JÁ RETIRADA';
+          status.className = 'status entregue';
+
+          confirmar.disabled = true;
+          confirmar.textContent = 'RETIRADA JÁ REGISTRADA';
+
+        } else {
+
+          status.textContent = 'APTO PARA RETIRADA';
+          status.className = 'status pendente';
+
+          confirmar.disabled = false;
+          confirmar.textContent = 'CONFIRMAR ENTREGA DA CESTA';
+        }
+
+      } catch (erro) {
+
+        processando = false;
+        tokenAtual = '';
+
+        mostrarMensagem(
+          'Erro ao consultar: ' + erro.message,
+          'error'
+        );
+      }
+    }
+
+    // CONFIRMAR ENTREGA
+    async function confirmarEntrega() {
+      if (!tokenAtual || !funcionarioAtual || processando) return;
+
+      const pin = document.getElementById('pin').value;
+      const responsavel = document
+        .getElementById('responsavel')
+        .value.trim();
+
+      if (!responsavel) {
+        mostrarMensagem('Informe o responsável pela entrega.', 'error');
+        return;
+      }
+
+      processando = true;
+
+      const botao = document.getElementById('confirmar');
+
+      botao.disabled = true;
+      botao.textContent = 'REGISTRANDO ENTREGA...';
+
+      try {
+
+        const resposta = await chamarAPI(
+          'registrar',
+          tokenAtual,
+          pin,
+          responsavel
+        );
+
+        processando = false;
+
+        if (!resposta || !resposta.sucesso) {
+
+          botao.disabled = false;
+          botao.textContent = 'CONFIRMAR ENTREGA DA CESTA';
+
+          mostrarMensagem(
+            resposta?.mensagem || 'Não foi possível registrar a entrega.',
+            'error'
+          );
+
+          return;
+        }
+
+        document.getElementById('status').textContent =
+          'CESTA ENTREGUE COM SUCESSO';
+
+        document.getElementById('status').className =
+          'status entregue';
+
+        botao.textContent = 'ENTREGA REGISTRADA';
+        botao.disabled = true;
+
+        mostrarMensagem(
+          'Retirada registrada em ' +
+          resposta.data +
+          ' às ' +
+          resposta.hora +
+          '.',
+          'success'
+        );
+
+      } catch (erro) {
+
+        processando = false;
+
+        botao.disabled = false;
+        botao.textContent = 'CONFIRMAR ENTREGA DA CESTA';
+
+        mostrarMensagem(
+          'Erro ao registrar: ' + erro.message,
+          'error'
+        );
+      }
+    }
+
+    // NOVA LEITURA
+    async function novaLeitura() {
+      tokenAtual = '';
+      funcionarioAtual = null;
+      processando = false;
+
+      document.getElementById('resultado').style.display = 'none';
+
+      esconderMensagem();
+
+      await iniciarLeitor();
+    }
+
+  </script>
+
+</body>
+</html>
